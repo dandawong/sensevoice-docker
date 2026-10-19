@@ -1,0 +1,54 @@
+services:
+  sensevoice-api:
+    image: ghcr.io/hsiang-han/sensevoice-api:latest
+    container_name: sensevoice-api
+    restart: unless-stopped
+    expose:
+      - "${API_PORT:-10095}"
+    volumes:
+      - ./models:/root/.cache/huggingface
+      - ./logs:/var/log/sensevoice
+    environment:
+      - DEVICE=${DEVICE:-cuda}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${GPU_DEVICE_ID:-0}']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${API_PORT:-10095}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sensevoice-net
+
+  tc-proxy:
+    build: ./tc-proxy
+    container_name: sensevoice-tc-proxy
+    restart: unless-stopped
+    ports:
+      - "${PROXY_PORT:-10096}:${PROXY_PORT:-10096}"
+    environment:
+      - SENSEVOICE_API_URL=http://sensevoice-api:${API_PORT:-10095}
+      - PROXY_PORT=${PROXY_PORT:-10096}
+      - OPENCC_CONFIG=${OPENCC_CONFIG:-s2hk}
+    depends_on:
+      sensevoice-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PROXY_PORT:-10096}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sensevoice-net
+
+networks:
+  sensevoice-net:
+    driver: bridge
