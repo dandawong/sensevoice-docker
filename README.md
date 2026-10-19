@@ -59,6 +59,161 @@ curl http://localhost:10096/health
 ./scripts/test.sh
 ```
 
+## 🪟 Windows 安裝
+
+本項目支持 Windows，需要通過 WSL 2 + Docker Desktop 運行。
+
+### 系統要求
+
+| 要求 | 說明 |
+|------|------|
+| **Windows 版本** | Windows 10/11 Pro、Enterprise 或 Education |
+| **WSL 2** | 必須啟用 |
+| **Docker Desktop** | 安裝 Docker Desktop for Windows |
+| **NVIDIA 驅動** | 版本 515+（GPU 模式） |
+| **內存** | 至少 8GB（推薦 16GB） |
+
+### 快速安裝（推薦）
+
+使用 PowerShell 安裝腳本：
+
+```powershell
+# 1. 以管理員身份打開 PowerShell
+
+# 2. 下載並運行安裝腳本
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/YOUR_USERNAME/sensevoice-docker/main/install-windows.ps1" -OutFile "install-windows.ps1"
+.\install-windows.ps1
+```
+
+安裝腳本會自動：
+- ✅ 檢查並安裝 WSL 2
+- ✅ 檢查 Docker Desktop
+- ✅ 檢查 NVIDIA 驅動
+- ✅ 克隆項目
+- ✅ 配置環境變量
+- ✅ 啟動服務
+
+### 手動安裝
+
+如果不想使用安裝腳本，可以手動安裝：
+
+**1. 安裝 WSL 2**
+
+```powershell
+# 以管理員身份運行 PowerShell
+wsl --install
+```
+
+重啟電腦。
+
+**2. 安裝 Docker Desktop**
+
+1. 下載 [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+2. 安裝時選擇 **Use WSL 2 instead of Hyper-V**
+3. 啟動 Docker Desktop
+
+**3. 安裝 NVIDIA CUDA on WSL**（GPU 模式）
+
+1. 安裝 [NVIDIA 驅動](https://www.nvidia.com/Download/index.aspx)（版本 515+）
+2. 在 WSL 中驗證：
+   ```bash
+   nvidia-smi
+   ```
+
+**4. 克隆並運行項目**
+
+```bash
+# 在 WSL 2 終端中運行
+git clone https://github.com/YOUR_USERNAME/sensevoice-docker.git
+cd sensevoice-docker
+
+# 複製配置
+cp .env.example .env
+
+# 啟動服務
+docker compose up -d --build
+```
+
+### Windows 日常使用
+
+使用 PowerShell 快速啟動腳本：
+
+```powershell
+# 啟動服務
+.\start-windows.ps1
+
+# 查看狀態
+.\start-windows.ps1 -Status
+
+# 查看日誌
+.\start-windows.ps1 -Logs
+
+# 停止服務
+.\start-windows.ps1 -Stop
+
+# 重啟服務
+.\start-windows.ps1 -Restart
+
+# 重新構建
+.\start-windows.ps1 -Build
+```
+
+### Windows 注意事項
+
+**1. Shell 腳本**
+
+Linux 的 `.sh` 腳本在 Windows 上不能直接運行，需要：
+- 使用 WSL 2 終端（推薦）
+- 或使用 PowerShell 腳本（`*.ps1`）
+
+**2. 性能**
+
+| 方面 | Linux | Windows (WSL 2) |
+|------|-------|----------------|
+| CPU 性能 | 100% | ~95% |
+| GPU 性能 | 100% | ~90-95% |
+| 文件 I/O | 最快 | 稍慢 |
+
+**3. 文件路徑**
+
+在 WSL 2 中，項目應該放在 Linux 文件系統中（如 `~/projects`），而不是 Windows 文件系統（如 `/mnt/c/`），以獲得最佳性能。
+
+**4. 端口訪問**
+
+Windows 上可以通過 `localhost:10096` 訪問服務，與 Linux 相同。
+
+### Windows 故障排除
+
+**問題 1：WSL 安裝失敗**
+```powershell
+# 手動啟用 WSL 功能
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+# 重啟電腦
+```
+
+**問題 2：Docker Desktop 無法啟動**
+- 確保 WSL 2 已安裝
+- 確保虛擬化已啟用（BIOS 設置）
+- 重啟 Docker Desktop 服務
+
+**問題 3：GPU 不可用**
+```bash
+# 在 WSL 中檢查
+nvidia-smi
+
+# 如果失敗，重新安裝 NVIDIA 驅動
+```
+
+**問題 4：端口被佔用**
+```powershell
+# 檢查端口
+netstat -ano | findstr :10096
+
+# 殺死進程
+taskkill /PID <進程ID> /F
+```
+
 ## 🚀 部署說明
 
 ### 首次部署
